@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<!--
+============================================================
+  STUDENT MANAGEMENT SYSTEM - Frontend
+  Tech: HTML + CSS + JavaScript (Vanilla)
+============================================================
+
+FILE LOCATION: templates/index.html
+(Flask looks for HTML files inside a 'templates' folder)
+
+WHAT IS THIS FILE?
+------------------
+This is the FACE of our application - what the user SEES.
+It has:
+1. A FORM to add/update students (top section)
+2. A TABLE to display all students (bottom section)
+3. JavaScript to connect with Flask backend (API calls)
+-->
+
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <!-- charset=UTF-8 → Supports all characters including Hindi, emojis etc. -->
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- viewport tag → Makes website look good on mobile phones too -->
+
+    <title>Student Management System</title>
+
+    <!-- ============================================================
+         CSS - STYLING (Makes the page look good)
+         We write CSS inside <style> tag (called "internal CSS")
+         ============================================================ -->
+    <style>
+        /* 
+        * { } targets ALL elements on the page
+        box-sizing: border-box → padding doesn't add extra width
+        margin/padding: 0 → removes default browser spacing
+        */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            /* linear-gradient creates a diagonal color transition */
+            min-height: 100vh;
+            /* 100vh = 100% of viewport height → full screen */
+            padding: 20px;
+            color: #e0e0e0;
+        }
+
+        /* ── Header ── */
+        .header {
+            text-align: center;
+            padding: 30px 0 20px;
+        }
+
+        .header h1 {
+            font-size: 2.4rem;
+            font-weight: 700;
+            color: #ffffff;
+            letter-spacing: 1px;
+            text-shadow: 0 0 20px rgba(100, 200, 255, 0.4);
+        }
+
+        .header h1 span {
+            color: #64c8ff;
+            /* Highlight "Student" in blue */
+        }
+
+        .header p {
+            color: #a0b4c8;
+            margin-top: 8px;
+            font-size: 1rem;
+        }
+
+        /* ── Main Container ── */
+        .container {
+            max-width: 900px;
+            /* Limits width so content doesn't stretch too wide on big screens */
+            margin: 0 auto;
+            /* auto margin centers it horizontally */
+        }
+
+        /* ── Cards (white boxes) ── */
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            /* Semi-transparent white - "glassmorphism" effect */
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 28px;
+            margin-bottom: 24px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .card h2 {
+            color: #64c8ff;
+            font-size: 1.3rem;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card h2::before {
+            content: '';
+            display: block;
+            width: 4px;
+            height: 20px;
+            background: #64c8ff;
+            border-radius: 2px;
+        }
+
+        /* ── Form Grid Layout ── */
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            /* 2 equal columns */
+            gap: 16px;
+            /* Space between grid items */
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .form-group.full-width {
+            grid-column: 1 / -1;
+            /* Spans both columns */
+        }
+
+        label {
+            font-size: 0.85rem;
+            color: #a0b4c8;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        input, select {
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 8px;
+            color: #ffffff;
+            font-size: 0.95rem;
+            transition: border-color 0.3s, box-shadow 0.3s;
+            /* transition makes the border glow animate smoothly */
+            outline: none;
+        }
+
+        input:focus, select:focus {
+            border-color: #64c8ff;
+            box-shadow: 0 0 0 3px rgba(100, 200, 255, 0.15);
+        }
+
+        select option {
+            background: #1a1a2e;
+            color: #ffffff;
+        }
+
+        /* ── Buttons ── */
+        .btn-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        button {
+            padding: 12px 28px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            /* cursor: pointer → shows hand icon on hover */
+            transition: transform 0.2s, box-shadow 0.2s;
+            letter-spacing: 0.5px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            /* Slight upward movement on hover */
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        button:active {
+            transform: translateY(0);
+            /* Goes back down when clicked */
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: #0f1923;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: #e0e0e0;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        /* ── Table ── */
+        .table-container {
+            overflow-x: auto;
+            /* Horizontal scroll if table is too wide on small screens */
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            /* Removes double borders between cells */
+        }
+
+        thead th {
+            padding: 14px 16px;
+            text-align: left;
+            background: rgba(100, 200, 255, 0.1);
+            color: #64c8ff;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+        }
+
+        tbody tr {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            transition: background 0.2s;
+        }
+
+        tbody tr:hover {
+            background: rgba(100, 200, 255, 0.05);
+        }
+
+        tbody td {
+            padding: 14px 16px;
+            color: #d0d8e4;
+            font-size: 0.92rem;
+        }
+
+        /* ── Action Buttons in Table ── */
+        .btn-edit {
+            background: rgba(255, 193, 7, 0.15);
+            color: #ffc107;
+            border: 1px solid rgba(255, 193, 7, 0.3);
+            padding: 6px 14px;
+            border-radius: 6px;
+            font-size: 0.82rem;
+            margin-right: 6px;
+        }
+
+        .btn-delete {
+            background: rgba(244, 67, 54, 0.15);
+            color: #f44336;
+            border: 1px solid rgba(244, 67, 54, 0.3);
+            padding: 6px 14px;
+            border-radius: 6px;
+            font-size: 0.82rem;
+        }
+
+        /* ── Message/Alert ── */
+        #message {
+            padding: 12px 18px;
+            border-radius: 8px;
+            margin-bottom: 18px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            display: none;
+            /* Hidden by default, shown via JavaScript */
+        }
+
+        .msg-success {
+            background: rgba(76, 175, 80, 0.15);
+            border: 1px solid rgba(76, 175, 80, 0.4);
+            color: #81c784;
+        }
+
+        .msg-error {
+            background: rgba(244, 67, 54, 0.15);
+            border: 1px solid rgba(244, 67, 54, 0.4);
+            color: #ef9a9a;
+        }
+
+        /* ── No data state ── */
+        .no-data {
+            text-align: center;
+            padding: 40px;
+            color: #607080;
+        }
+
+        /* ── Stats Bar ── */
+        .stats {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .stat-box {
+            background: rgba(100, 200, 255, 0.08);
+            border: 1px solid rgba(100, 200, 255, 0.2);
+            border-radius: 10px;
+            padding: 14px 20px;
+            text-align: center;
+            flex: 1;
+        }
+
+        .stat-box .num {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #64c8ff;
+        }
+
+        .stat-box .label {
+            font-size: 0.78rem;
+            color: #a0b4c8;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* ── Responsive: Single column on mobile ── */
+        @media (max-width: 600px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+                /* One column on small screens */
+            }
+            .stats {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- ============================================================
+         HEADER
+         ============================================================ -->
+    <div class="header">
+        <h1>🎓 <span>Student</span> Management System</h1>
+        <p>Full-Stack CRUD Application — Flask + MySQL</p>
+    </div>
+
+    <div class="container">
+
+        <!-- ── Message Box (shown after each action) ── -->
+        <div id="message"></div>
+
+        <!-- ── Stats Bar ── -->
+        <div class="stats">
+            <div class="stat-box">
+                <div class="num" id="totalCount">0</div>
+                <div class="label">Total Students</div>
+            </div>
+            <div class="stat-box">
+                <div class="num" id="courseCount">0</div>
+                <div class="label">Courses</div>
+            </div>
+        </div>
+
+        <!-- ============================================================
+             FORM SECTION (Add / Edit Student)
+             ============================================================ -->
+        <div class="card">
+            <h2 id="formTitle">Add New Student</h2>
+
+            <!--
+            WHY NOT USE <form> TAG WITH action= ?
+            ----------------------------------------
+            Traditional HTML forms RELOAD the page when submitted.
+            We want to submit data WITHOUT page reload (AJAX).
+            So we use a div instead of form, and handle submit with JavaScript.
+            -->
+            <div class="form-grid">
+
+                <!-- Hidden input to store the ID when editing -->
+                <input type="hidden" id="studentId">
+                <!--
+                WHY HIDDEN INPUT?
+                -----------------
+                When user clicks "Edit", we need to remember WHICH student's ID
+                to update. We store it in a hidden field (user can't see it,
+                but JavaScript can read it).
+                -->
+
+                <div class="form-group">
+                    <label for="name">Full Name</label>
+                    <input type="text" id="name" placeholder="e.g. Rahul Kumar" maxlength="100">
+                </div>
+
+                <div class="form-group">
+                    <label for="age">Age</label>
+                    <input type="number" id="age" placeholder="e.g. 20" min="15" max="35">
+                </div>
+
+                <div class="form-group">
+                    <label for="course">Course</label>
+                    <select id="course">
+                        <option value="">— Select Course —</option>
+                        <option value="B.Tech CSE">B.Tech CSE</option>
+                        <option value="B.Tech ECE">B.Tech ECE</option>
+                        <option value="B.Tech ME">B.Tech ME</option>
+                        <option value="BCA">BCA</option>
+                        <option value="MCA">MCA</option>
+                        <option value="MBA">MBA</option>
+                        <option value="B.Sc">B.Sc</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="email">Email Address</label>
+                    <input type="email" id="email" placeholder="e.g. rahul@email.com">
+                </div>
+
+            </div>
+
+            <div class="btn-group">
+                <button class="btn-primary" onclick="submitForm()">
+                    💾 Save Student
+                </button>
+                <button class="btn-secondary" onclick="resetForm()">
+                    ✕ Clear Form
+                </button>
+            </div>
+        </div>
+
+        <!-- ============================================================
+             TABLE SECTION (Display All Students)
+             ============================================================ -->
+        <div class="card">
+            <h2>All Students</h2>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#ID</th>
+                            <th>Name</th>
+                            <th>Age</th>
+                            <th>Course</th>
+                            <th>Email</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="studentsTableBody">
+                        <!--
+                        This tbody is EMPTY in HTML.
+                        JavaScript will DYNAMICALLY fill it with student data.
+                        This is called "Dynamic Rendering".
+                        -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div> <!-- end container -->
+
+
+    <!-- ============================================================
+         JAVASCRIPT - THE LOGIC
+         We write JS at the bottom of body so HTML loads first.
+         This ensures our HTML elements exist before JS tries to use them.
+         ============================================================ -->
+    <script>
+
+        // ──────────────────────────────────────────────────────────
+        // CONFIGURATION
+        // ──────────────────────────────────────────────────────────
+        const BASE_URL = 'http://localhost:5000';
+        /*
+        WHY A CONSTANT FOR URL?
+        -----------------------
+        If we change the server address, we change it ONCE here
+        instead of searching and replacing in every function.
+        This follows DRY (Don't Repeat Yourself) principle.
+        */
+
+        // Track if we're in EDIT mode or ADD mode
+        let isEditMode = false;
+        /*
+        WHY THIS VARIABLE?
+        ------------------
+        When user clicks "Save", we need to know:
+        - Is this a NEW student? → Use POST (Create)
+        - Is this EDITING existing? → Use PUT (Update)
+        
+        isEditMode = false → Adding new student
+        isEditMode = true  → Editing existing student
+        */
+
+
+        // ──────────────────────────────────────────────────────────
+        // FUNCTION: Show Message to User
+        // ──────────────────────────────────────────────────────────
+        function showMessage(text, type) {
+            /*
+            PARAMETERS:
+            text → The message to display ("Student added successfully!")
+            type → 'success' or 'error'
+            
+            This function makes the hidden #message div VISIBLE
+            and sets its text and color.
+            */
+            const msgDiv = document.getElementById('message');
+            msgDiv.textContent = text;
+            msgDiv.className = type === 'success' ? 'msg-success' : 'msg-error';
+            msgDiv.style.display = 'block';
+
+            // Auto-hide after 3 seconds
+            setTimeout(() => {
+                msgDiv.style.display = 'none';
+            }, 3000);
+            /*
+            setTimeout(function, milliseconds)
+            Runs the function AFTER the specified delay.
+            3000ms = 3 seconds.
+            */
+        }
+
+
+        // ──────────────────────────────────────────────────────────
+        // FUNCTION: Load All Students (READ operation)
+        // ──────────────────────────────────────────────────────────
+        async function loadStudents() {
+            /*
+            WHAT IS async/await?
+            --------------------
+            Network requests (calling backend) take TIME.
+            JavaScript doesn't wait for them by default (it's ASYNCHRONOUS).
+            
+            async → marks this function as asynchronous
+            await → "Wait for this operation to complete before moving to next line"
+            
+            Without async/await, JavaScript would try to use the response
+            BEFORE it even arrives from the server!
+            
+            REAL-WORLD ANALOGY:
+            Ordering food at a restaurant:
+            Without await → You walk away before waiter gives food (bad!)
+            With await    → You wait for food to arrive, then eat (correct!)
+            */
+
+            try {
+                // Step 1: Send GET request to Flask backend
+                const response = await fetch(`${BASE_URL}/students`);
+                /*
+                fetch() is the browser's built-in function to make HTTP requests.
+                It's like a messenger that goes to the server and brings back data.
+                
+                GET request to http://localhost:5000/students
+                Flask receives it and runs the get_students() function
+                */
+
+                // Step 2: Parse the response as JSON
+                const students = await response.json();
+                /*
+                response is a "Response object" - raw data from server
+                .json() converts the JSON text into a JavaScript array/object
+                
+                await is needed because .json() is also async (takes time to parse)
+                */
+
+                // Step 3: Update the table
+                renderTable(students);
+
+                // Step 4: Update stats
+                document.getElementById('totalCount').textContent = students.length;
+                const uniqueCourses = new Set(students.map(s => s.course)).size;
+                document.getElementById('courseCount').textContent = uniqueCourses;
+                /*
+                new Set() removes duplicates.
+                students.map(s => s.course) creates array of course names
+                new Set(...) keeps only unique courses
+                .size gives count of unique items
+                */
+
+            } catch (error) {
+                /*
+                try/catch handles ERRORS gracefully.
+                If fetch fails (server down, network error):
+                - Without try/catch: entire JavaScript crashes
+                - With try/catch: we handle it nicely and show a message
+                */
+                showMessage('Failed to load students. Is Flask running?', 'error');
+                console.error('Error:', error);
+                // console.error prints error details in browser's DevTools console
+            }
+        }
+
+
+        // ──────────────────────────────────────────────────────────
+        // FUNCTION: Render Students in Table (DISPLAY logic)
+        // ──────────────────────────────────────────────────────────
+        function renderTable(students) {
+            /*
+            This function takes the students ARRAY and builds HTML table rows.
+            Then it injects them into the <tbody id="studentsTableBody">.
+            
+            This is called DOM MANIPULATION:
+            DOM = Document Object Model (the structure of our HTML page)
+            JavaScript can ADD, REMOVE, CHANGE any HTML element.
+            */
+
+            const tbody = document.getElementById('studentsTableBody');
+
+            if (students.length === 0) {
+                // If no students exist, show a friendly empty state message
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="no-data">
+                            📭 No students found. Add your first student above!
+                        </td>
+                    </tr>
+                `;
+                return;
+                // return exits the function early - no need to continue
+            }
+
+            // Build HTML rows for each student
+            tbody.innerHTML = students.map(student => `
+                <tr>
+                    <td><strong>#${student.id}</strong></td>
+                    <td>${student.name}</td>
+                    <td>${student.age}</td>
+                    <td>${student.course}</td>
+                    <td>${student.email}</td>
+                    <td>
+                        <button class="btn-edit" onclick="editStudent(${student.id})">
+                            ✏️ Edit
+                        </button>
+                        <button class="btn-delete" onclick="deleteStudent(${student.id}, '${student.name}')">
+                            🗑️ Delete
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+            /*
+            .map() → Transforms each student object into an HTML string (tr row)
+            .join('') → Joins all the strings into ONE big string
+                        (without join, you'd get commas between rows)
+            tbody.innerHTML = ... → Sets the HTML content of <tbody>
+            
+            Template Literals (backtick strings):
+            `Hello ${name}` → Inserts variable value inside string
+            Traditional: "Hello " + name
+            Template:    `Hello ${name}` (cleaner!)
+            */
+        }
+
+
+        // ──────────────────────────────────────────────────────────
+        // FUNCTION: Submit Form (handles both Add AND Update)
+        // ──────────────────────────────────────────────────────────
+        async function submitForm() {
+            // Step 1: Collect form values
+            const name = document.getElementById('name').value.trim();
+            const age = document.getElementById('age').value;
+            const course = document.getElementById('course').value;
+            const email = document.getElementById('email').value.trim();
+            const studentId = document.getElementById('studentId').value;
+            /*
+            .value → Gets what the user typed in the input field
+            .trim() → Removes leading/trailing whitespace
+                      "  Rahul  ".trim() → "Rahul"
+            */
+
+            // Step 2: Validate inputs
+            if (!name || !age || !course || !email) {
+                showMessage('Please fill in all fields!', 'error');
+                return;
+                // If any field is empty, show error and STOP
+            }
+
+            // Step 3: Prepare data object to send
+            const studentData = { name, age: parseInt(age), course, email };
+            /*
+            parseInt(age) converts string "20" to number 20
+            Server expects age as a number, not string
+            
+            { name, age, course, email } is SHORTHAND for:
+            { name: name, age: age, course: course, email: email }
+            (ES6 shorthand property names)
+            */
+
+            try {
+                let response;
+
+                if (isEditMode) {
+                    // ── UPDATE existing student ──
+                    response = await fetch(`${BASE_URL}/students/${studentId}`, {
+                        method: 'PUT',
+                        // PUT = Update/Replace
+                        headers: { 'Content-Type': 'application/json' },
+                        // headers tell the server "I'm sending JSON data"
+                        body: JSON.stringify(studentData)
+                        // JSON.stringify converts JS object to JSON string
+                        // {"name":"Rahul","age":20,"course":"CSE","email":"..."}
+                    });
+                    showMessage('Student updated successfully! ✅', 'success');
+
+                } else {
+                    // ── CREATE new student ──
+                    response = await fetch(`${BASE_URL}/students`, {
+                        method: 'POST',
+                        // POST = Create new resource
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(studentData)
+                    });
+                    showMessage('Student added successfully! 🎉', 'success');
+                }
+
+                // Step 4: Reset form and reload table
+                resetForm();
+                loadStudents();
+                // Refresh the table to show latest data
+
+            } catch (error) {
+                showMessage('Operation failed. Check if server is running.', 'error');
+                console.error('Error:', error);
+            }
+        }
+
+
+        // ──────────────────────────────────────────────────────────
+        // FUNCTION: Fill form for Editing (pre-fill with student data)
+        // ──────────────────────────────────────────────────────────
+        async function editStudent(id) {
+            /*
+            WHAT HAPPENS WHEN USER CLICKS EDIT:
+            1. Fetch student data from server
+            2. Fill the form fields with that data
+            3. Switch to "Edit Mode"
+            4. User modifies data and clicks "Save"
+            5. submitForm() sends PUT request
+            */
+
+            try {
+                const response = await fetch(`${BASE_URL}/students/${id}`);
+                const student = await response.json();
+
+                // Pre-fill the form with student's current data
+                document.getElementById('name').value = student.name;
+                document.getElementById('age').value = student.age;
+                document.getElementById('course').value = student.course;
+                document.getElementById('email').value = student.email;
+                document.getElementById('studentId').value = student.id;
+                // Store the ID in hidden field so submitForm() knows WHICH student to update
+
+                // Switch to Edit Mode
+                isEditMode = true;
+                document.getElementById('formTitle').textContent = `✏️ Edit Student: ${student.name}`;
+                // Change the form heading to show we're editing
+
+                // Scroll to form
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                // Scroll to top of page so user can see the form
+                // behavior: 'smooth' → animated scroll (not instant jump)
+
+            } catch (error) {
+                showMessage('Failed to load student data.', 'error');
+            }
+        }
+
+
+        // ──────────────────────────────────────────────────────────
+        // FUNCTION: Delete a Student
+        // ──────────────────────────────────────────────────────────
+        async function deleteStudent(id, name) {
+            /*
+            WHY CONFIRM?
+            ------------
+            Deletion is PERMANENT. We show a popup asking user to confirm.
+            This prevents accidental deletions.
+            */
+            const confirmed = confirm(`Are you sure you want to delete "${name}"?\nThis action cannot be undone!`);
+
+            if (!confirmed) return;
+            // If user clicks "Cancel", stop here
+
+            try {
+                const response = await fetch(`${BASE_URL}/students/${id}`, {
+                    method: 'DELETE'
+                    // No body needed for DELETE - the id is in the URL
+                });
+
+                const result = await response.json();
+                showMessage(`"${name}" deleted successfully! 🗑️`, 'success');
+                loadStudents();
+                // Reload table to remove the deleted student from display
+
+            } catch (error) {
+                showMessage('Failed to delete student.', 'error');
+            }
+        }
+
+
+        // ──────────────────────────────────────────────────────────
+        // FUNCTION: Reset/Clear the Form
+        // ──────────────────────────────────────────────────────────
+        function resetForm() {
+            // Clear all input values
+            document.getElementById('name').value = '';
+            document.getElementById('age').value = '';
+            document.getElementById('course').value = '';
+            document.getElementById('email').value = '';
+            document.getElementById('studentId').value = '';
+
+            // Switch back to "Add" mode
+            isEditMode = false;
+            document.getElementById('formTitle').textContent = 'Add New Student';
+        }
+
+
+        // ──────────────────────────────────────────────────────────
+        // INITIALIZATION: Load students when page first opens
+        // ──────────────────────────────────────────────────────────
+        loadStudents();
+        /*
+        This line runs AS SOON AS the JavaScript is loaded.
+        The function fetches all students and populates the table.
+        
+        This is called "initialization code" - it runs once at startup.
+        */
+
+    </script>
+
+</body>
+</html>
